@@ -22,6 +22,7 @@ public class MainActivity extends Activity {
     private ScrollView formScroll, historyScroll;
     private Spinner pain, fatigue, discomfort, abdominalPain, headache;
     private final Spinner[] symptoms = new Spinner[Entry.SYMPTOMS.length];
+    private final CheckBox[] bodyParts = new CheckBox[Entry.BODY_PARTS.length];
     private EditText location, notes;
     private Button dateButton, saveButton;
     private final Calendar selected = Calendar.getInstance();
@@ -60,6 +61,7 @@ public class MainActivity extends Activity {
             abdominalPain.setSelection(state.getInt("abdominalPain")); headache.setSelection(state.getInt("headache"));
             pain.setSelection(state.getInt("pain")); fatigue.setSelection(state.getInt("fatigue")); discomfort.setSelection(state.getInt("discomfort"));
             for (int i = 0; i < symptoms.length; i++) symptoms[i].setSelection(state.getInt("symptom" + i));
+            setLocationMask(state.getInt("locationMask"));
             location.setText(state.getString("location", "")); notes.setText(state.getString("notes", ""));
             exporting = state.getBoolean("exporting"); tab = state.getInt("tab");
         }
@@ -81,8 +83,21 @@ public class MainActivity extends Activity {
             flags.addView(label(Entry.SYMPTOMS[i], 16, INK));
             symptoms[i] = spinner(new String[]{"未記録", "なし", "あり"}); flags.addView(symptoms[i]);
         }
+        LinearLayout regions = card(form, "痛む部位（複数選択・任意）");
+        regions.addView(label("当てはまる場所を選んでください。左右や細かい位置は補足に書けます。", 13, INK));
+        for (int i = 0; i < bodyParts.length; i += 2) {
+            LinearLayout row = new LinearLayout(this);
+            for (int j = i; j < Math.min(i + 2, bodyParts.length); j++) {
+                CheckBox box = new CheckBox(this); box.setText(Entry.BODY_PARTS[j]);
+                box.setTextColor(INK); box.setTextSize(15); box.setMinHeight(dp(48));
+                bodyParts[j] = box;
+                row.addView(box, new LinearLayout.LayoutParams(0, -2, 1));
+            }
+            regions.addView(row);
+        }
+        regions.addView(label("部位の補足・その他（任意）", 15, INK));
+        location = input("例：左肩の外側、右手の指先", false); regions.addView(location);
         LinearLayout memo = card(form, "メモ");
-        memo.addView(label("痛む部位（任意）", 15, INK)); location = input("例：肩、背中、全身", false); memo.addView(location);
         memo.addView(label("その他自由記述（任意）", 15, INK));
         notes = input("症状の変化、服薬、睡眠、きっかけなど", true); memo.addView(notes);
         saveButton = button("この内容を保存", this::save); form.addView(saveButton);
@@ -133,11 +148,20 @@ public class MainActivity extends Activity {
             new TimePickerDialog(this, (v,h,min) -> { selected.set(y,m,d); selected.set(Calendar.HOUR_OF_DAY,h); selected.set(Calendar.MINUTE,min); selected.set(Calendar.SECOND,0); updateDate(); }, selected.get(Calendar.HOUR_OF_DAY), selected.get(Calendar.MINUTE), true).show();
         }, selected.get(Calendar.YEAR), selected.get(Calendar.MONTH), selected.get(Calendar.DAY_OF_MONTH)).show();
     }
+    private int locationMask() {
+        int mask = 0;
+        for (int i = 0; i < bodyParts.length; i++) if (bodyParts[i].isChecked()) mask |= 1 << i;
+        return mask;
+    }
+    private void setLocationMask(int mask) {
+        for (int i = 0; i < bodyParts.length; i++) bodyParts[i].setChecked((mask & (1 << i)) != 0);
+    }
     private Entry current() {
         Entry e = new Entry(); e.id = editingId; e.time = selected.getTimeInMillis();
         e.abdominalPain = painValue(abdominalPain); e.headache = painValue(headache);
         e.pain = pain.getSelectedItemPosition(); e.fatigue = fatigue.getSelectedItemPosition(); e.discomfort = discomfort.getSelectedItemPosition();
         for (int i = 0; i < symptoms.length; i++) e.symptoms[i] = symptoms[i].getSelectedItemPosition() - 1;
+        e.locationMask = locationMask();
         e.location = location.getText().toString(); e.notes = notes.getText().toString(); return e;
     }
     private void save() {
@@ -147,17 +171,19 @@ public class MainActivity extends Activity {
         catch (RuntimeException ex) { toast("保存できませんでした。空き容量などを確認してください。"); }
     }
     private void reset() {
+        setLocationMask(0);
         abdominalPain.setSelection(0); headache.setSelection(0);
         editingId = 0; selected.setTimeInMillis(System.currentTimeMillis()); pain.setSelection(0); fatigue.setSelection(0); discomfort.setSelection(0);
         for (Spinner s : symptoms) s.setSelection(0); location.setText(""); notes.setText(""); updateDate(); formScroll.smoothScrollTo(0,0);
     }
     private void edit(Entry e) {
         Entry draft = current();
-        if (draft.abdominalPain != -1 || draft.headache != -1 || draft.id != 0 || draft.pain != 0 || draft.fatigue != 0 || draft.discomfort != 0 || !draft.location.isEmpty() || !draft.notes.isEmpty() || Arrays.stream(draft.symptoms).anyMatch(s -> s != -1)) {
+        if (draft.locationMask != 0 || draft.abdominalPain != -1 || draft.headache != -1 || draft.id != 0 || draft.pain != 0 || draft.fatigue != 0 || draft.discomfort != 0 || !draft.location.isEmpty() || !draft.notes.isEmpty() || Arrays.stream(draft.symptoms).anyMatch(s -> s != -1)) {
             new AlertDialog.Builder(this).setMessage("入力中の内容を破棄して、この記録を編集しますか？").setNegativeButton("戻る", null).setPositiveButton("編集", (d,w) -> load(e)).show();
         } else load(e);
     }
     private void load(Entry e) {
+        setLocationMask(e.locationMask);
         abdominalPain.setSelection(painPosition(e.abdominalPain)); headache.setSelection(painPosition(e.headache));
         editingId = e.id; selected.setTimeInMillis(e.time); pain.setSelection(e.pain); fatigue.setSelection(e.fatigue); discomfort.setSelection(e.discomfort);
         for (int i = 0; i < symptoms.length; i++) symptoms[i].setSelection(e.symptoms[i] + 1);
@@ -183,7 +209,8 @@ public class MainActivity extends Activity {
                 StringBuilder flags = new StringBuilder();
                 for (int i = 0; i < e.symptoms.length; i++) flags.append(Entry.SYMPTOMS[i]).append("：").append(e.symptoms[i] == 1 ? "あり" : e.symptoms[i] == 0 ? "なし" : "未記録").append('\n');
                 c.addView(label(flags.toString().trim(), 14, INK));
-                if (!e.location.isEmpty()) c.addView(label("部位：" + e.location, 15, INK));
+                if (e.locationMask != 0) c.addView(label("痛む部位：" + e.selectedLocations(), 15, INK));
+                if (!e.location.isEmpty()) c.addView(label("部位の補足：" + e.location, 15, INK));
                 if (!e.notes.isEmpty()) c.addView(label(e.notes, 15, INK));
                 c.addView(button("編集", () -> edit(e)));
                 c.addView(button("削除", () -> new AlertDialog.Builder(this).setTitle("この記録を削除しますか？").setMessage("削除すると元に戻せません。").setNegativeButton("戻る", null).setPositiveButton("削除", (d,w) -> {
@@ -221,6 +248,7 @@ public class MainActivity extends Activity {
         state.putInt("abdominalPain", abdominalPain.getSelectedItemPosition()); state.putInt("headache", headache.getSelectedItemPosition());
         state.putInt("pain", pain.getSelectedItemPosition()); state.putInt("fatigue", fatigue.getSelectedItemPosition()); state.putInt("discomfort", discomfort.getSelectedItemPosition());
         for (int i = 0; i < symptoms.length; i++) state.putInt("symptom" + i, symptoms[i].getSelectedItemPosition());
+        state.putInt("locationMask", locationMask());
         state.putString("location", location.getText().toString()); state.putString("notes", notes.getText().toString()); state.putInt("tab", tab);
         // A worker belongs to the previous Activity; allow another export after recreation.
         state.putBoolean("exporting", false);

@@ -20,13 +20,14 @@ public class AppTest {
     @Test public void recordsPersistUpdateAndDelete() {
         EntryStore db = new EntryStore(RuntimeEnvironment.getApplication());
         Entry e = new Entry(); e.time = 123; e.pain = 2; e.fatigue = 8; e.discomfort = 10;
-        e.symptoms[0] = 1; e.symptoms[1] = 0; e.location = "肩"; e.notes = "服薬後\n少し改善";
+        e.symptoms[0] = 1; e.symptoms[1] = 0; e.locationMask = (1 << 3) | (1 << 5); e.location = "左側"; e.notes = "服薬後\n少し改善";
         db.save(e); assertTrue(e.id > 0); db.close();
         db = new EntryStore(RuntimeEnvironment.getApplication());
         Entry restored = db.all().get(0);
+        assertEquals(e.locationMask, restored.locationMask); assertEquals("肩、背中", restored.selectedLocations());
         assertEquals(e.notes, restored.notes); assertEquals(e.location, restored.location);
         assertArrayEquals(e.symptoms, restored.symptoms); assertEquals(10, restored.discomfort);
-        restored.pain = 5; db.save(restored); assertEquals(1, db.all().size()); assertEquals(5, db.all().get(0).pain);
+        restored.locationMask = 1 << 6; restored.pain = 5; db.save(restored); assertEquals(1, db.all().size()); assertEquals(5, db.all().get(0).pain); assertEquals("腰", db.all().get(0).selectedLocations());
         db.delete(e.id); assertTrue(db.all().isEmpty()); db.close();
     }
     @Test public void upgradesLegacyHeadacheWithoutInventingSeverity() {
@@ -38,12 +39,25 @@ public class AppTest {
         EntryStore db = new EntryStore(context);
         List<Entry> records = db.all(); assertEquals(3, records.size());
         for (Entry e : records) {
+            assertEquals(0, e.locationMask); assertEquals("肩", e.location);
             assertEquals(-1, e.abdominalPain);
             assertEquals(e.id == 3 ? -2 : e.id == 2 ? 0 : -1, e.headache);
             assertArrayEquals(new int[]{1,0,-1,1,0,-1,1}, e.symptoms);
             assertEquals("旧記録", e.notes);
         }
         db.close();
+    }
+    @Test public void upgradesVersionTwoPreservingFreeText() {
+        android.content.Context context = RuntimeEnvironment.getApplication();
+        android.database.sqlite.SQLiteDatabase old = context.openOrCreateDatabase("pain-log.db", 0, null);
+        old.execSQL("CREATE TABLE entries (id INTEGER PRIMARY KEY, time INTEGER, pain INTEGER, fatigue INTEGER, discomfort INTEGER, abdominal_pain INTEGER, headache INTEGER, symptoms TEXT, location TEXT, notes TEXT)");
+        old.execSQL("INSERT INTO entries VALUES (1,123,2,3,4,5,6,'1,0,-1,1,0,-1,1','左肩、右手の指先','旧記録')");
+        old.setVersion(2); old.close();
+        EntryStore db = new EntryStore(context); Entry e = db.all().get(0);
+        assertEquals(0, e.locationMask); assertEquals("左肩、右手の指先", e.location); assertEquals(6, e.headache);
+        e.locationMask = (1 << 3) | (1 << 10); db.save(e); db.close();
+        db = new EntryStore(context); e = db.all().get(0);
+        assertEquals("肩、手・指", e.selectedLocations()); assertEquals("左肩、右手の指先", e.location); db.close();
     }
     @Test public void invalidScoreCannotBeSaved() {
         EntryStore db = new EntryStore(RuntimeEnvironment.getApplication());
@@ -57,13 +71,17 @@ public class AppTest {
             assertTrue(new EntryStore(a).all().isEmpty());
             List<Spinner> spinners = views(a, Spinner.class);
             spinners.get(0).setSelection(3); spinners.get(1).setSelection(7); spinners.get(2).setSelection(9); spinners.get(3).setSelection(5); spinners.get(4).setSelection(8); spinners.get(5).setSelection(2);
+            views(a, CheckBox.class).get(3).setChecked(true); views(a, CheckBox.class).get(5).setChecked(true);
             List<EditText> inputs = views(a, EditText.class); inputs.get(0).setText("背中"); inputs.get(1).setText("夜に強い");
             controller.recreate(); a = controller.get();
+            assertTrue(views(a, CheckBox.class).get(3).isChecked()); assertTrue(views(a, CheckBox.class).get(5).isChecked());
             assertEquals("夜に強い", views(a, EditText.class).get(1).getText().toString());
             assertEquals(3, views(a, Spinner.class).get(0).getSelectedItemPosition());
             assertEquals(5, views(a, Spinner.class).get(3).getSelectedItemPosition());
             findButton(a, "この内容を保存").performClick();
             EntryStore db = new EntryStore(a); assertEquals(1, db.all().size());
+            assertEquals("肩、背中", db.all().get(0).selectedLocations());
+            assertFalse(views(a, CheckBox.class).get(3).isChecked());
             assertEquals(4, db.all().get(0).abdominalPain); assertEquals(7, db.all().get(0).headache);
             assertEquals(1, db.all().get(0).symptoms[0]); assertEquals(7, db.all().get(0).fatigue);
             findButton(a, "すべての記録をCSVに書き出す").performClick();
@@ -71,8 +89,12 @@ public class AppTest {
             assertEquals(android.content.Intent.ACTION_CREATE_DOCUMENT, export.getAction());
             assertEquals("text/csv", export.getType());
             assertTrue(export.hasCategory(android.content.Intent.CATEGORY_OPENABLE));
-            findButton(a, "編集").performClick(); views(a, Spinner.class).get(0).setSelection(5);
+            findButton(a, "編集").performClick();
+            assertTrue(views(a, CheckBox.class).get(3).isChecked());
+            views(a, CheckBox.class).get(3).setChecked(false); views(a, CheckBox.class).get(6).setChecked(true);
+            views(a, Spinner.class).get(0).setSelection(5);
             findButton(a, "変更を保存").performClick(); assertEquals(1, db.all().size()); assertEquals(5, db.all().get(0).pain);
+            assertEquals("背中、腰", db.all().get(0).selectedLocations());
             findButton(a, "削除").performClick();
             AlertDialog dialog = ShadowAlertDialog.getLatestAlertDialog(); dialog.getButton(AlertDialog.BUTTON_POSITIVE).performClick();
             Shadows.shadowOf(android.os.Looper.getMainLooper()).idle();

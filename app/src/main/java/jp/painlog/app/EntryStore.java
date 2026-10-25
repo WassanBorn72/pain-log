@@ -9,12 +9,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 final class EntryStore extends SQLiteOpenHelper {
-    EntryStore(Context context) { super(context, "pain-log.db", null, 2); }
+    EntryStore(Context context) { super(context, "pain-log.db", null, 3); }
     @Override public void onCreate(SQLiteDatabase db) {
-        db.execSQL("CREATE TABLE entries (id INTEGER PRIMARY KEY AUTOINCREMENT, time INTEGER NOT NULL, pain INTEGER NOT NULL CHECK(pain BETWEEN 1 AND 10), fatigue INTEGER NOT NULL CHECK(fatigue BETWEEN 1 AND 10), discomfort INTEGER NOT NULL CHECK(discomfort BETWEEN 1 AND 10), abdominal_pain INTEGER NOT NULL DEFAULT -1 CHECK(abdominal_pain BETWEEN -1 AND 10), headache INTEGER NOT NULL DEFAULT -1 CHECK(headache BETWEEN -2 AND 10), symptoms TEXT NOT NULL, location TEXT NOT NULL, notes TEXT NOT NULL)");
+        db.execSQL("CREATE TABLE entries (id INTEGER PRIMARY KEY AUTOINCREMENT, time INTEGER NOT NULL, pain INTEGER NOT NULL CHECK(pain BETWEEN 1 AND 10), fatigue INTEGER NOT NULL CHECK(fatigue BETWEEN 1 AND 10), discomfort INTEGER NOT NULL CHECK(discomfort BETWEEN 1 AND 10), abdominal_pain INTEGER NOT NULL DEFAULT -1 CHECK(abdominal_pain BETWEEN -1 AND 10), headache INTEGER NOT NULL DEFAULT -1 CHECK(headache BETWEEN -2 AND 10), symptoms TEXT NOT NULL, location_mask INTEGER NOT NULL DEFAULT 0 CHECK(location_mask >= 0), location TEXT NOT NULL, notes TEXT NOT NULL)");
     }
     @Override public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-        if (oldVersion == 1 && newVersion == 2) {
+        if (oldVersion < 1 || newVersion != 3) throw new IllegalStateException("Migration required");
+        if (oldVersion < 2) {
             db.execSQL("ALTER TABLE entries ADD COLUMN abdominal_pain INTEGER NOT NULL DEFAULT -1 CHECK(abdominal_pain BETWEEN -1 AND 10)");
             db.execSQL("ALTER TABLE entries ADD COLUMN headache INTEGER NOT NULL DEFAULT -1 CHECK(headache BETWEEN -2 AND 10)");
             try (Cursor c = db.query("entries", new String[]{"id", "symptoms"}, null, null, null, null, null)) {
@@ -30,7 +31,8 @@ final class EntryStore extends SQLiteOpenHelper {
                     db.update("entries", values, "id=?", new String[]{Long.toString(c.getLong(0))});
                 }
             }
-        } else throw new IllegalStateException("Migration required");
+        }
+        if (oldVersion < 3) db.execSQL("ALTER TABLE entries ADD COLUMN location_mask INTEGER NOT NULL DEFAULT 0 CHECK(location_mask >= 0)");
     }
     void save(Entry e) {
         ContentValues values = new ContentValues();
@@ -39,6 +41,7 @@ final class EntryStore extends SQLiteOpenHelper {
         values.put("fatigue", e.fatigue); values.put("discomfort", e.discomfort);
         StringBuilder states = new StringBuilder();
         for (int state : e.symptoms) { if (states.length() > 0) states.append(','); states.append(state); }
+        values.put("location_mask", e.locationMask);
         values.put("symptoms", states.toString()); values.put("location", e.location); values.put("notes", e.notes);
         if (e.id == 0) e.id = getWritableDatabase().insertOrThrow("entries", null, values);
         else if (getWritableDatabase().update("entries", values, "id=?", new String[]{Long.toString(e.id)}) != 1)
@@ -57,6 +60,7 @@ final class EntryStore extends SQLiteOpenHelper {
                 e.discomfort = c.getInt(c.getColumnIndexOrThrow("discomfort"));
                 String[] states = c.getString(c.getColumnIndexOrThrow("symptoms")).split(",");
                 for (int i = 0; i < e.symptoms.length; i++) e.symptoms[i] = Integer.parseInt(states[i]);
+                e.locationMask = c.getInt(c.getColumnIndexOrThrow("location_mask"));
                 e.location = c.getString(c.getColumnIndexOrThrow("location")); e.notes = c.getString(c.getColumnIndexOrThrow("notes"));
                 result.add(e);
             }
