@@ -17,12 +17,12 @@ public class CsvExporterTest {
     }
     @Test public void exportsJapaneseStatesBomAndTimezone() throws Exception {
         Entry e = new Entry(); e.id = 7; e.time = 0; e.pain = 2; e.fatigue = 4; e.discomfort = 10;
-        e.symptoms[0] = 1; e.symptoms[1] = 0; e.notes = "痛み,強い\n\"夜\"";
+        e.abdominalPain = 6; e.headache = -2; e.symptoms[0] = 1; e.symptoms[1] = 0; e.notes = "痛み,強い\n\"夜\"";
         StringWriter out = new StringWriter(); CsvExporter.write(out, List.of(e), ZoneId.of("Asia/Tokyo"));
         String csv = out.toString();
         assertTrue(csv.startsWith("\uFEFF記録ID"));
         assertTrue(csv.contains("1970-01-01T09:00:00+09:00"));
-        assertTrue(csv.contains(",2,4,10,\"あり\",\"なし\",\"未記録\""));
+        assertTrue(csv.contains(",2,\"6 / 10\",\"あり（強さ未記録）\",4,10,\"あり\",\"なし\",\"未記録\""));
         assertTrue(csv.endsWith("\"痛み,強い\n\"\"夜\"\"\"\r\n"));
     }
     @Test public void emptyExportHasHeader() throws Exception {

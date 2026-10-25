@@ -29,6 +29,22 @@ public class AppTest {
         restored.pain = 5; db.save(restored); assertEquals(1, db.all().size()); assertEquals(5, db.all().get(0).pain);
         db.delete(e.id); assertTrue(db.all().isEmpty()); db.close();
     }
+    @Test public void upgradesLegacyHeadacheWithoutInventingSeverity() {
+        android.content.Context context = RuntimeEnvironment.getApplication();
+        android.database.sqlite.SQLiteDatabase old = context.openOrCreateDatabase("pain-log.db", 0, null);
+        old.execSQL("CREATE TABLE entries (id INTEGER PRIMARY KEY, time INTEGER, pain INTEGER, fatigue INTEGER, discomfort INTEGER, symptoms TEXT, location TEXT, notes TEXT)");
+        for (int i = -1; i <= 1; i++) old.execSQL("INSERT INTO entries VALUES (?, 123, 2, 3, 4, ?, '肩', '旧記録')", new Object[]{i + 2, "1," + i + ",0,-1,1,0,-1,1"});
+        old.setVersion(1); old.close();
+        EntryStore db = new EntryStore(context);
+        List<Entry> records = db.all(); assertEquals(3, records.size());
+        for (Entry e : records) {
+            assertEquals(-1, e.abdominalPain);
+            assertEquals(e.id == 3 ? -2 : e.id == 2 ? 0 : -1, e.headache);
+            assertArrayEquals(new int[]{1,0,-1,1,0,-1,1}, e.symptoms);
+            assertEquals("旧記録", e.notes);
+        }
+        db.close();
+    }
     @Test public void invalidScoreCannotBeSaved() {
         EntryStore db = new EntryStore(RuntimeEnvironment.getApplication());
         Entry e = new Entry(); e.time = 1; e.pain = 0; e.fatigue = 1; e.discomfort = 1;
@@ -40,13 +56,15 @@ public class AppTest {
             findButton(a, "この内容を保存").performClick();
             assertTrue(new EntryStore(a).all().isEmpty());
             List<Spinner> spinners = views(a, Spinner.class);
-            spinners.get(0).setSelection(3); spinners.get(1).setSelection(7); spinners.get(2).setSelection(9); spinners.get(3).setSelection(2);
+            spinners.get(0).setSelection(3); spinners.get(1).setSelection(7); spinners.get(2).setSelection(9); spinners.get(3).setSelection(5); spinners.get(4).setSelection(8); spinners.get(5).setSelection(2);
             List<EditText> inputs = views(a, EditText.class); inputs.get(0).setText("背中"); inputs.get(1).setText("夜に強い");
             controller.recreate(); a = controller.get();
             assertEquals("夜に強い", views(a, EditText.class).get(1).getText().toString());
             assertEquals(3, views(a, Spinner.class).get(0).getSelectedItemPosition());
+            assertEquals(5, views(a, Spinner.class).get(3).getSelectedItemPosition());
             findButton(a, "この内容を保存").performClick();
             EntryStore db = new EntryStore(a); assertEquals(1, db.all().size());
+            assertEquals(4, db.all().get(0).abdominalPain); assertEquals(7, db.all().get(0).headache);
             assertEquals(1, db.all().get(0).symptoms[0]); assertEquals(7, db.all().get(0).fatigue);
             findButton(a, "すべての記録をCSVに書き出す").performClick();
             android.content.Intent export = Shadows.shadowOf(a).getNextStartedActivityForResult().intent;

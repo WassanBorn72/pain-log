@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light"><meta name="referrer" content="no-referrer">
+<title>からだの記録 — ブラウザ体験版</title>
+<style>
+:root{--ink:#263f39;--green:#226e63;--muted:#687970;--line:#e0e7df;--paper:#f5f6f0}*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif;font-size:15px;line-height:1.7}button,input,select,textarea{font:inherit}button,a,input,select,textarea{touch-action:manipulation}button{cursor:pointer}button:disabled{opacity:.45;cursor:default}:focus-visible{outline:3px solid #dfac5d;outline-offset:3px}header{max-width:1080px;margin:auto;padding:46px 26px 22px}.brand{font-size:12px;letter-spacing:.18em;font-weight:700;color:var(--green)}h1{font-size:clamp(28px,5vw,40px);letter-spacing:.04em;margin:9px 0 4px;font-weight:650}header p{color:var(--muted);margin:0}.badge{display:inline-block;background:#e4eee5;border-radius:20px;padding:4px 12px;font-size:12px;letter-spacing:.03em;margin-left:12px;vertical-align:middle}.layout{max-width:1080px;margin:0 auto;padding:0 26px 50px;display:grid;grid-template-columns:240px 1fr;gap:34px}.sidebar{padding-top:16px}.sidebar button{display:block;width:100%;text-align:left;border:0;border-radius:12px;margin-bottom:8px;background:none;padding:14px 18px;color:var(--muted);font-weight:600}.sidebar button[aria-selected=true]{background:var(--green);color:white}.side-note{padding:16px;font-size:12px;color:var(--muted)}.side-note strong{display:block;color:var(--green);font-size:13px;margin-bottom:6px}.card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:25px 28px;margin:16px 0}.section-heading{display:flex;gap:12px;align-items:center;margin-bottom:14px}.num{display:grid;place-items:center;background:#edf3ed;border-radius:50%;width:29px;height:29px;color:var(--green);font-size:12px}h2{font-size:19px;margin:0;font-weight:650}h3{font-size:17px;margin:0}.hint{color:var(--muted);font-size:12px;margin:6px 0 16px}.field{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:14px 0;border-bottom:1px solid #eef1ec}.field:last-child{border:0}.field>label{font-weight:550}.field label small{display:block;font-size:11px;color:var(--muted);font-weight:400}.required{font-size:11px;color:var(--green);margin-left:5px}select,input,textarea{border:1px solid #cedbd1;border-radius:9px;background:#fafcf9;color:var(--ink);padding:11px 12px;min-height:46px}select{min-width:152px;max-width:100%}input,textarea{width:100%}textarea{resize:vertical;min-height:110px}.stack{display:block;margin:14px 0 6px;font-weight:550}.btn{border:1px solid #cbd9d0;border-radius:10px;background:#fff;color:var(--green);padding:12px 20px;min-height:48px;font-weight:600}.primary{background:var(--green);border-color:var(--green);color:#fff}.danger{color:#a94c40}.actions{display:flex;gap:10px;flex-wrap:wrap;margin:20px 0}.actions .primary{flex:1}.notice{border-left:3px solid #b7cabb;background:#eaf0e6;border-radius:0 10px 10px 0;padding:13px 17px;font-size:12px;color:#506457}.empty{text-align:center;padding:48px 10px;color:var(--muted)}.entry-head{display:flex;justify-content:space-between;align-items:center;gap:10px}.entry-head time{font-size:13px;color:var(--muted)}.scores{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:17px 0}.score{background:var(--paper);border-radius:10px;padding:12px;font-size:12px}.score b{display:block;color:var(--green);font-size:22px;font-weight:600}.score b small{font-size:12px;color:var(--muted);font-weight:400}.tags{display:flex;gap:6px;flex-wrap:wrap}.tag{background:#edf3ed;padding:4px 9px;border-radius:6px;font-size:11px}.memo{white-space:pre-wrap;overflow-wrap:anywhere;font-size:14px}.entry .actions{margin-bottom:0}.entry .btn{padding:7px 15px;min-height:42px}.count{background:#e4eee5;border-radius:20px;padding:3px 10px;font-size:12px}.history-head{display:flex;justify-content:space-between;align-items:center;margin-top:16px}#status{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--ink);color:white;max-width:90vw;padding:12px 22px;border-radius:10px;font-size:14px;z-index:4;box-shadow:0 4px 20px #263f3933}#status:empty{display:none}[hidden]{display:none!important}.footer{font-size:11px;color:var(--muted);text-align:center;margin-top:20px}dialog{border:1px solid var(--line);border-radius:16px;padding:25px;color:var(--ink);max-width:min(420px,90vw)}dialog::backdrop{background:#263f3966}dialog p{font-size:14px}dialog .actions{justify-content:flex-end;margin-bottom:0}@media(max-width:720px){header{padding:25px 18px 15px}.layout{display:block;padding:0 16px 30px}.sidebar{display:flex;gap:8px;padding:0}.sidebar button{text-align:center;padding:11px 10px}.side-note{display:none}.card{padding:21px 18px}.badge{margin:8px 0 0;font-size:11px}.field{gap:10px}.field>label{font-size:14px}select{min-width:135px;width:135px}.scores{grid-template-columns:repeat(3,1fr);gap:6px}.score{padding:9px}.score b{font-size:20px}.history-head{flex-wrap:wrap;gap:12px}#entry-form>.actions{display:grid;grid-template-columns:1fr 1fr}#entry-form>.actions .primary{grid-column:1/-1}}
+</style>
+</head>
+<body>
+<header><div class="brand">PAIN LOG / 自分のペースで</div><h1>からだの記録 <span class="badge">ブラウザ体験版</span></h1><p>今日の体調を、少しずつ残しましょう。</p></header>
+<div class="layout">
+<aside><nav class="sidebar" role="tablist" aria-label="画面切り替え"><button id="tab-record" role="tab" aria-selected="true" aria-controls="record-panel">＋ 記録する</button><button id="tab-history" role="tab" aria-selected="false" aria-controls="history-panel">履歴・書き出し</button></nav><div class="side-note"><strong>あなたのための、小さな記録。</strong>記録はこのブラウザ内に保存されます。Android版との同期や、サーバーへの送信はありません。<br><br>ブラウザのデータ消去で記録も消えます。大切な記録はCSVで保存してください。</div></aside>
+<main>
+<div class="notice" id="storage-note">体験版の記録はこのブラウザ内だけに保存します。共有端末では試験用の内容をご利用ください。</div>
+<section id="record-panel" role="tabpanel" aria-labelledby="tab-record">
+<form id="entry-form">
+<div class="card"><div class="section-heading"><span class="num">01</span><h2>記録日時</h2></div><label class="stack" for="record-time">いつの体調ですか？</label><input type="datetime-local" id="record-time" required><p class="hint">過去の記録も残せます。</p></div>
+<div class="card"><div class="section-heading"><span class="num">02</span><h2>症状の強さ</h2></div><p class="hint">1＝最も軽い · 10＝最も強い。3項目は必須です。</p><div id="core-fields"></div></div>
+<div class="card"><div class="section-heading"><span class="num">03</span><h2>腹痛・頭痛</h2></div><p class="hint">身体の痛みと分けて記録します。症状がなければ「なし」を選んでください。</p><div id="pain-fields"></div></div>
+<div class="card"><div class="section-heading"><span class="num">04</span><h2>気になる身体症状</h2></div><p class="hint">わからない・答えない項目は「未記録」のままで。</p><div id="symptom-fields"></div></div>
+<div class="card"><div class="section-heading"><span class="num">05</span><h2>メモ</h2></div><label class="stack" for="location">痛む部位 <span class="hint">任意</span></label><input id="location" placeholder="例：肩、背中、全身" maxlength="2000"><label class="stack" for="notes">その他自由記述 <span class="hint">任意</span></label><textarea id="notes" placeholder="症状の変化、服薬、睡眠、きっかけなど" maxlength="20000"></textarea></div>
+<div class="actions"><button class="btn primary" type="submit" id="save">この内容を保存</button><button class="btn" type="button" id="sample">サンプルを入力</button><button class="btn" type="button" id="reset">リセット</button></div>
+</form></section>
+<section id="history-panel" role="tabpanel" aria-labelledby="tab-history" hidden><div class="history-head"><h2>これまでの記録 <span class="count" id="count">0件</span></h2><button id="export" class="btn">CSVに書き出す</button></div><p class="hint">Excel・Googleスプレッドシートで開けます。Android版の記録は含まれません。</p><div id="entries"></div></section>
+<p class="footer">PAIN LOG · 記録を支えるアプリです。診断や治療判断は行いません。</p>
+</main></div><div id="status" role="status" aria-live="polite"></div>
+<dialog id="confirm"><h2 id="confirm-title">確認</h2><p id="confirm-message"></p><div class="actions"><button class="btn" id="cancel">戻る</button><button class="btn primary" id="confirm-ok">続ける</button></div></dialog>
+<script>
+'use strict';
+const $ = id => document.getElementById(id);
+const symptoms = ['浮腫（むくみ）','じんましん','口の渇き','のどの渇き','皮膚の乾燥','光過敏','睡眠で休めなかった'];
+const cores = [['pain','身体の痛み','腹痛・頭痛を除く'],['fatigue','怠さ',''],['discomfort','症状に対する不快感','']];
+const key = 'pain-log-browser-v1';
+let records = [], editingId = null, storageAvailable = true, unreadable = false, pendingAction;
+let statusTimeout;
+function message(text) { $('status').textContent = text; clearTimeout(statusTimeout); statusTimeout = setTimeout(() => $('status').textContent = '', 5000); }
+function field(parent, id, title, options, required=false, hint='') {
+  const row = document.createElement('div'); row.className = 'field';
+  const label = document.createElement('label'); label.htmlFor = id; label.textContent = title;
+  if (required) { const badge = document.createElement('span'); badge.className = 'required'; badge.textContent = '必須'; label.append(badge); }
+  if (hint) { const small = document.createElement('small'); small.textContent = hint; label.append(small); }
+  const select = document.createElement('select'); select.id = id; select.required = required;
+  for (const [value,text] of options) select.add(new Option(text, value));
+  row.append(label,select); $(parent).append(row);
+}
+const scores = Array.from({length:10}, (_,i) => [String(i+1), `${i+1} / 10`]);
+cores.forEach(([id,title,hint]) => field('core-fields',id,title,[['','選択してください'],...scores],true,hint));
+field('pain-fields','abdominalPain','腹痛',[['-1','未記録'],['0','なし'],...scores]);
+field('pain-fields','headache','頭痛',[['-1','未記録'],['0','なし'],...scores,['-2','あり（強さ未記録）']]);
+symptoms.forEach((title,i) => field('symptom-fields','symptom-'+i,title,[['-1','未記録'],['0','なし'],['1','あり']]));
+function validRecord(e) {
+  return e && typeof e.id === 'string' && Number.isFinite(e.time) && Number.isFinite(new Date(e.time).getTime()) &&
+    cores.every(([id]) => Number.isInteger(e[id]) && e[id]>=1 && e[id]<=10) &&
+    Number.isInteger(e.abdominalPain) && e.abdominalPain>=-1 && e.abdominalPain<=10 &&
+    Number.isInteger(e.headache) && e.headache>=-2 && e.headache<=10 &&
+    Array.isArray(e.symptoms) && e.symptoms.length===symptoms.length && e.symptoms.every(v=>[-1,0,1].includes(v)) && typeof e.location==='string' && typeof e.notes==='string';
+}
+try {
+  const raw = localStorage.getItem(key);
+  if (raw) { const parsed = JSON.parse(raw); if (!Array.isArray(parsed) || !parsed.every(validRecord)) throw new Error('Invalid data'); records = parsed; }
+  localStorage.setItem(key, JSON.stringify(records));
+} catch (error) {
+  // Never silently overwrite an existing unreadable database.
+  try { unreadable = localStorage.getItem(key) !== null; } catch { /* storage disabled */ }
+  storageAvailable = false;
+  $('storage-note').textContent = unreadable ? '保存済みデータを読み込めません。元のデータの上書きを避けるため保存を停止しています。' : '一時保存モードです。この環境ではブラウザ保存を使えないため、画面を閉じる前にCSVを書き出してください。';
+}
+function persist(next) {
+  if (unreadable) { message('保存済みデータを読み込めないため変更できません。'); return false; }
+  try { if (storageAvailable) localStorage.setItem(key, JSON.stringify(next)); records=next; return true; }
+  catch { message('保存できません。空き容量・ブラウザ設定を確認してください。入力内容は残しています。'); return false; }
+}
+function localTime(time=Date.now()) { const d=new Date(time); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`; }
+function pad(n) {return String(n).padStart(2,'0');}
+function reset() { HTMLFormElement.prototype.reset.call($('entry-form')); $('record-time').value=localTime(); editingId=null; $('save').textContent='この内容を保存'; }
+function draft() { return editingId!==null || cores.some(([id])=>$(id).value!=='') || $('abdominalPain').value!=='-1' || $('headache').value!=='-1' || symptoms.some((_,i)=>$('symptom-'+i).value!=='-1') || $('location').value!=='' || $('notes').value!==''; }
+function confirmAction(title,text,action) { pendingAction=action; $('confirm-title').textContent=title; $('confirm-message').textContent=text; $('confirm').showModal(); }
+$('cancel').onclick=()=>{$('confirm').close();pendingAction=null;};
+$('confirm').addEventListener('cancel',()=>pendingAction=null);
+$('confirm-ok').onclick=()=>{const action=pendingAction; pendingAction=null; $('confirm').close(); if(action) action();};
+function tab(name) {
+  $('record-panel').hidden=name!=='record'; $('history-panel').hidden=name!=='history';
+  $('tab-record').setAttribute('aria-selected',String(name==='record')); $('tab-history').setAttribute('aria-selected',String(name==='history'));
+  if(name==='history') render();
+}
+$('tab-record').onclick=()=>tab('record'); $('tab-history').onclick=()=>tab('history');
+// Keyboard operation for the two tabs.
+document.querySelector('.sidebar').addEventListener('keydown',e=>{if(['ArrowLeft','ArrowRight','Home','End'].includes(e.key)){e.preventDefault();const name=e.key==='Home'?'record':e.key==='End'?'history':$('record-panel').hidden?'record':'history';tab(name);$('tab-'+name).focus();}});
+$('reset').onclick=()=>confirmAction('入力をリセットしますか？','入力内容を消して、新しい記録に戻ります。',reset);
+$('sample').onclick=()=>{
+  const fill=()=>{reset(); $('pain').value='4';$('fatigue').value='6';$('discomfort').value='5';$('abdominalPain').value='2';$('headache').value='7';$('symptom-0').value='0';$('symptom-5').value='1';$('location').value='肩・背中';$('notes').value='試験用の記録です。夕方に頭痛が強く、休息で少し楽になった。';message('サンプルを入力しました。保存して履歴を試せます。');};
+  if(draft()) confirmAction('サンプルを入力しますか？','入力中の内容を置き換えます。',fill); else fill();
+};
+$('entry-form').onsubmit=e=>{
+  e.preventDefault();
+  const entry={id:editingId || (globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`),time:new Date($('record-time').value).getTime(),symptoms:symptoms.map((_,i)=>Number($('symptom-'+i).value)),location:$('location').value,notes:$('notes').value};
+  cores.forEach(([id])=>entry[id]=Number($(id).value)); entry.abdominalPain=Number($('abdominalPain').value); entry.headache=Number($('headache').value);
+  if(!validRecord(entry)){message('日時と症状の強さを確認してください。');return;}
+  if(editingId && !records.some(r=>r.id===editingId)){message('編集対象が見つかりません。入力内容を確認してください。');return;}
+  const next=editingId?records.map(r=>r.id===editingId?entry:r):[...records,entry];
+  if(persist(next)){reset();tab('history');message(storageAvailable?'保存しました':'一時保存しました。閉じる前にCSVを書き出してください。');}
+};
+function painText(n){return n===-2?'あり（強さ未記録）':n===-1?'未記録':n===0?'なし':`${n} / 10`;}
+function el(tag,text,className){const v=document.createElement(tag); if(text!==undefined)v.textContent=text;if(className)v.className=className;return v;}
+function load(entry){editingId=entry.id;$('record-time').value=localTime(entry.time);cores.forEach(([id])=>$(id).value=entry[id]);$('abdominalPain').value=entry.abdominalPain;$('headache').value=entry.headache;entry.symptoms.forEach((v,i)=>$('symptom-'+i).value=v);$('location').value=entry.location;$('notes').value=entry.notes;$('save').textContent='変更を保存';tab('record');window.scrollTo({top:0,behavior:'smooth'});}
+function render(){
+  $('entries').replaceChildren();$('count').textContent=records.length+'件';$('export').disabled=!records.length;
+  if(!records.length){$('entries').append(el('p','まだ記録がありません。「記録する」から今日の体調を残してみましょう。','empty'));return;}
+  [...records].sort((a,b)=>b.time-a.time).forEach(entry=>{
+    const card=el('article',undefined,'card entry');const head=el('div',undefined,'entry-head');const time=el('time',new Intl.DateTimeFormat('ja-JP',{dateStyle:'medium',timeStyle:'short'}).format(entry.time));time.dateTime=new Date(entry.time).toISOString();head.append(el('h3','体調の記録'),time);card.append(head);
+    const grid=el('div',undefined,'scores');cores.forEach(([id,title])=>{const score=el('div',title,'score');const b=el('b',String(entry[id]));b.append(el('small',' / 10'));score.append(b);grid.append(score);});card.append(grid);
+    card.append(el('p',`腹痛：${painText(entry.abdominalPain)}　／　頭痛：${painText(entry.headache)}`));
+    const tags=el('div',undefined,'tags');symptoms.forEach((name,i)=>tags.append(el('span',name+'：'+(entry.symptoms[i]===1?'あり':entry.symptoms[i]===0?'なし':'未記録'),'tag')));card.append(tags);
+    if(entry.location)card.append(el('p','部位：'+entry.location,'memo'));if(entry.notes)card.append(el('p',entry.notes,'memo'));
+    const actions=el('div',undefined,'actions');const edit=el('button','編集','btn');edit.onclick=()=>draft()?confirmAction('この記録を編集しますか？','入力中の内容を破棄して編集します。',()=>load(entry)):load(entry);
+    const remove=el('button','削除','btn danger');remove.onclick=()=>confirmAction('この記録を削除しますか？','削除すると元に戻せません。',()=>{if(persist(records.filter(r=>r.id!==entry.id))){if(editingId===entry.id)reset();render();message('削除しました');}});
+    actions.append(edit,remove);card.append(actions);$('entries').append(card);
+  });
+}
+function csvCell(text){text=String(text);if(/^[\s]*[=+\-@]/u.test(text))text="'"+text;return '"'+text.replaceAll('"','""')+'"';}
+function exportTime(time){const d=new Date(time);const offset=-d.getTimezoneOffset();return localTime(time)+':'+pad(d.getSeconds())+(offset>=0?'+':'-')+pad(Math.floor(Math.abs(offset)/60))+':'+pad(Math.abs(offset)%60);}
+$('export').onclick=()=>{
+  const rows=[['記録ID','記録日時','身体の痛み(1-10)','腹痛','頭痛','怠さ(1-10)','不快感(1-10)',...symptoms,'痛む部位','その他自由記述']];
+  [...records].sort((a,b)=>b.time-a.time).forEach(r=>rows.push([r.id,exportTime(r.time),r.pain,painText(r.abdominalPain),painText(r.headache),r.fatigue,r.discomfort,...r.symptoms.map(v=>v===1?'あり':v===0?'なし':'未記録'),r.location,r.notes]));
+  const blob=new Blob(['\ufeff'+rows.map(row=>row.map(csvCell).join(',')).join('\r\n')+'\r\n'],{type:'text/csv;charset=utf-8'});const url=URL.createObjectURL(blob);const a=el('a');a.href=url;a.download='pain-log-'+localTime().replace(/[-:T]/g,'')+'.csv';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),10000);message(records.length+'件のCSVをダウンロードしました');
+};
+window.addEventListener('beforeunload',e=>{if(draft()){e.preventDefault();e.returnValue='';}});
+reset();
+</script>
+</body></html>

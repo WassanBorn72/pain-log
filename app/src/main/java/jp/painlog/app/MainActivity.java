@@ -20,7 +20,7 @@ public class MainActivity extends Activity {
     private EntryStore store;
     private LinearLayout root, form, history;
     private ScrollView formScroll, historyScroll;
-    private Spinner pain, fatigue, discomfort;
+    private Spinner pain, fatigue, discomfort, abdominalPain, headache;
     private final Spinner[] symptoms = new Spinner[Entry.SYMPTOMS.length];
     private EditText location, notes;
     private Button dateButton, saveButton;
@@ -57,6 +57,7 @@ public class MainActivity extends Activity {
         buildForm();
         if (state != null) {
             editingId = state.getLong("editingId"); selected.setTimeInMillis(state.getLong("time"));
+            abdominalPain.setSelection(state.getInt("abdominalPain")); headache.setSelection(state.getInt("headache"));
             pain.setSelection(state.getInt("pain")); fatigue.setSelection(state.getInt("fatigue")); discomfort.setSelection(state.getInt("discomfort"));
             for (int i = 0; i < symptoms.length; i++) symptoms[i].setSelection(state.getInt("symptom" + i));
             location.setText(state.getString("location", "")); notes.setText(state.getString("notes", ""));
@@ -69,7 +70,11 @@ public class MainActivity extends Activity {
         dateButton = button("", this::pickDate); when.addView(dateButton);
         LinearLayout scales = card(form, "症状の強さ");
         scales.addView(label("1＝最も軽い · 10＝最も強い（すべて必須）", 13, INK));
-        pain = rating(scales, "痛み"); fatigue = rating(scales, "怠さ"); discomfort = rating(scales, "症状に対する不快感");
+        pain = rating(scales, "身体の痛み（腹痛・頭痛を除く）"); fatigue = rating(scales, "怠さ"); discomfort = rating(scales, "症状に対する不快感");
+        LinearLayout separate = card(form, "腹痛・頭痛");
+        separate.addView(label("身体の痛みとは別に記録します。なし／未記録も選べます。", 13, INK));
+        abdominalPain = separateRating(separate, "腹痛", false);
+        headache = separateRating(separate, "頭痛", true);
         LinearLayout flags = card(form, "気になる身体症状");
         flags.addView(label("わからない・答えない項目は「未記録」のままで。", 13, INK));
         for (int i = 0; i < symptoms.length; i++) {
@@ -106,6 +111,16 @@ public class MainActivity extends Activity {
         for (int i = 1; i <= 10; i++) values[i] = i + " / 10";
         Spinner s = spinner(values); s.setContentDescription(name + "、1から10"); parent.addView(s); return s;
     }
+    private Spinner separateRating(LinearLayout parent, String name, boolean legacy) {
+        parent.addView(label(name, 16, INK));
+        String[] options = new String[legacy ? 13 : 12];
+        options[0] = "未記録"; options[1] = "なし";
+        for (int i = 1; i <= 10; i++) options[i + 1] = i + " / 10";
+        if (legacy) options[12] = "あり（強さ未記録）";
+        Spinner s = spinner(options); s.setContentDescription(name + "の強さ"); parent.addView(s); return s;
+    }
+    private int painValue(Spinner s) { return s.getSelectedItemPosition() == 12 ? -2 : s.getSelectedItemPosition() - 1; }
+    private int painPosition(int value) { return value == -2 ? 12 : value + 1; }
     private EditText input(String hint, boolean multiline) {
         EditText e = new EditText(this); e.setHint(hint); e.setTextSize(16); e.setTextColor(INK);
         e.setInputType(android.text.InputType.TYPE_CLASS_TEXT | (multiline ? android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE : 0));
@@ -120,27 +135,30 @@ public class MainActivity extends Activity {
     }
     private Entry current() {
         Entry e = new Entry(); e.id = editingId; e.time = selected.getTimeInMillis();
+        e.abdominalPain = painValue(abdominalPain); e.headache = painValue(headache);
         e.pain = pain.getSelectedItemPosition(); e.fatigue = fatigue.getSelectedItemPosition(); e.discomfort = discomfort.getSelectedItemPosition();
         for (int i = 0; i < symptoms.length; i++) e.symptoms[i] = symptoms[i].getSelectedItemPosition() - 1;
         e.location = location.getText().toString(); e.notes = notes.getText().toString(); return e;
     }
     private void save() {
         Entry e = current();
-        if (e.pain == 0 || e.fatigue == 0 || e.discomfort == 0) { toast("痛み・怠さ・不快感をすべて選択してください"); return; }
+        if (e.pain == 0 || e.fatigue == 0 || e.discomfort == 0) { toast("身体の痛み・怠さ・不快感をすべて選択してください"); return; }
         try { store.save(e); reset(); showTab(1); toast("保存しました"); }
         catch (RuntimeException ex) { toast("保存できませんでした。空き容量などを確認してください。"); }
     }
     private void reset() {
+        abdominalPain.setSelection(0); headache.setSelection(0);
         editingId = 0; selected.setTimeInMillis(System.currentTimeMillis()); pain.setSelection(0); fatigue.setSelection(0); discomfort.setSelection(0);
         for (Spinner s : symptoms) s.setSelection(0); location.setText(""); notes.setText(""); updateDate(); formScroll.smoothScrollTo(0,0);
     }
     private void edit(Entry e) {
         Entry draft = current();
-        if (draft.id != 0 || draft.pain != 0 || draft.fatigue != 0 || draft.discomfort != 0 || !draft.location.isEmpty() || !draft.notes.isEmpty() || Arrays.stream(draft.symptoms).anyMatch(s -> s != -1)) {
+        if (draft.abdominalPain != -1 || draft.headache != -1 || draft.id != 0 || draft.pain != 0 || draft.fatigue != 0 || draft.discomfort != 0 || !draft.location.isEmpty() || !draft.notes.isEmpty() || Arrays.stream(draft.symptoms).anyMatch(s -> s != -1)) {
             new AlertDialog.Builder(this).setMessage("入力中の内容を破棄して、この記録を編集しますか？").setNegativeButton("戻る", null).setPositiveButton("編集", (d,w) -> load(e)).show();
         } else load(e);
     }
     private void load(Entry e) {
+        abdominalPain.setSelection(painPosition(e.abdominalPain)); headache.setSelection(painPosition(e.headache));
         editingId = e.id; selected.setTimeInMillis(e.time); pain.setSelection(e.pain); fatigue.setSelection(e.fatigue); discomfort.setSelection(e.discomfort);
         for (int i = 0; i < symptoms.length; i++) symptoms[i].setSelection(e.symptoms[i] + 1);
         location.setText(e.location); notes.setText(e.notes); updateDate(); showTab(0); formScroll.smoothScrollTo(0,0);
@@ -160,7 +178,8 @@ public class MainActivity extends Activity {
             if (entries.isEmpty()) history.addView(label("まだ記録がありません。\n「記録する」から、今日の体調を残してみましょう。", 16, INK));
             for (Entry e : entries) {
                 LinearLayout c = card(history, dateFormat.format(new Date(e.time)));
-                c.addView(label("痛み " + e.pain + "  /  怠さ " + e.fatigue + "  /  不快感 " + e.discomfort, 17, INK));
+                c.addView(label("身体の痛み " + e.pain + "  /  怠さ " + e.fatigue + "  /  不快感 " + e.discomfort, 17, INK));
+                c.addView(label("腹痛：" + CsvExporter.painText(e.abdominalPain) + "  /  頭痛：" + CsvExporter.painText(e.headache), 16, INK));
                 StringBuilder flags = new StringBuilder();
                 for (int i = 0; i < e.symptoms.length; i++) flags.append(Entry.SYMPTOMS[i]).append("：").append(e.symptoms[i] == 1 ? "あり" : e.symptoms[i] == 0 ? "なし" : "未記録").append('\n');
                 c.addView(label(flags.toString().trim(), 14, INK));
@@ -199,6 +218,7 @@ public class MainActivity extends Activity {
     }
     @Override protected void onSaveInstanceState(Bundle state) {
         super.onSaveInstanceState(state); state.putLong("editingId", editingId); state.putLong("time", selected.getTimeInMillis());
+        state.putInt("abdominalPain", abdominalPain.getSelectedItemPosition()); state.putInt("headache", headache.getSelectedItemPosition());
         state.putInt("pain", pain.getSelectedItemPosition()); state.putInt("fatigue", fatigue.getSelectedItemPosition()); state.putInt("discomfort", discomfort.getSelectedItemPosition());
         for (int i = 0; i < symptoms.length; i++) state.putInt("symptom" + i, symptoms[i].getSelectedItemPosition());
         state.putString("location", location.getText().toString()); state.putString("notes", notes.getText().toString()); state.putInt("tab", tab);
