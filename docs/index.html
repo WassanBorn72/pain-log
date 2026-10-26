@@ -19,9 +19,10 @@ fieldset.regions{border:0;padding:0;margin:0}fieldset.regions legend{font-weight
 <form id="entry-form">
 <div class="card"><div class="section-heading"><span class="num">01</span><h2>記録日時</h2></div><label class="stack" for="record-time">いつの体調ですか？</label><input type="datetime-local" id="record-time" required><p class="hint">過去の記録も残せます。</p></div>
 <div class="card"><div class="section-heading"><span class="num">02</span><h2>症状の強さ</h2></div><p class="hint">1＝最も軽い · 10＝最も強い。3項目は必須です。</p><div id="core-fields"></div></div>
-<div class="card"><div class="section-heading"><span class="num">03</span><h2>腹痛・頭痛</h2></div><p class="hint">身体の痛みと分けて記録します。症状がなければ「なし」を選んでください。</p><div id="pain-fields"></div></div>
-<div class="card"><div class="section-heading"><span class="num">04</span><h2>気になる身体症状</h2></div><p class="hint">わからない・答えない項目は「未記録」のままで。</p><div id="symptom-fields"></div></div>
-<div class="card"><div class="section-heading"><span class="num">05</span><h2>痛む部位とメモ</h2></div><fieldset class="regions"><legend>痛む部位（複数選択・任意）</legend><p class="hint">当てはまる場所を選んでください。左右や細かい位置は補足に書けます。</p><div id="region-fields" class="region-grid"></div></fieldset><label class="stack" for="location">部位の補足・その他 <span class="hint">任意</span></label><input id="location" placeholder="例：左肩の外側、右手の指先" maxlength="2000"><label class="stack" for="notes">その他自由記述 <span class="hint">任意</span></label><textarea id="notes" placeholder="症状の変化、服薬、睡眠、きっかけなど" maxlength="20000"></textarea></div>
+<div class="card"><div class="section-heading"><span class="num">03</span><h2>痛む部位</h2></div><fieldset class="regions"><legend>痛む部位（複数選択・任意）</legend><p class="hint">当てはまる場所を選んでください。左右や細かい位置は補足に書けます。</p><div id="region-fields" class="region-grid"></div></fieldset><label class="stack" for="location">部位の補足・その他 <span class="hint">任意</span></label><input id="location" placeholder="例：左肩の外側、右手の指先" maxlength="2000"></div>
+<div class="card"><div class="section-heading"><span class="num">04</span><h2>腹痛・頭痛</h2></div><p class="hint">身体の痛みと分けて記録します。症状がなければ「なし」を選んでください。</p><div id="pain-fields"></div></div>
+<div class="card"><div class="section-heading"><span class="num">05</span><h2>気になる身体症状</h2></div><p class="hint">わからない・答えない項目は「未記録」のままで。</p><div id="symptom-fields"></div></div>
+<div class="card"><div class="section-heading"><span class="num">06</span><h2>メモ</h2></div><label class="stack" for="notes">その他自由記述 <span class="hint">任意</span></label><textarea id="notes" placeholder="症状の変化、服薬、睡眠、きっかけなど" maxlength="20000"></textarea></div>
 <div class="actions"><button class="btn primary" type="submit" id="save">この内容を保存</button><button class="btn" type="button" id="sample">サンプルを入力</button><button class="btn" type="button" id="reset">リセット</button></div>
 </form></section>
 <section id="history-panel" role="tabpanel" aria-labelledby="tab-history" hidden><div class="history-head"><h2>これまでの記録 <span class="count" id="count">0件</span></h2><button id="export" class="btn">CSVに書き出す</button></div><p class="hint">Excel・Googleスプレッドシートで開けます。Android版の記録は含まれません。</p><div id="entries"></div></section>
@@ -36,6 +37,7 @@ const symptoms = ['浮腫（むくみ）','じんましん','口の渇き','の�
 const bodyParts = ['全身','頭・顔','首','肩','胸','背中','腰','腹部','お尻・股関節','腕・肘','手・指','太もも','膝','すね・ふくらはぎ','足首・足'];
 const cores = [['pain','身体の痛み','腹痛・頭痛を除く'],['fatigue','怠さ',''],['discomfort','症状に対する不快感','']];
 const key = 'pain-log-browser-v1';
+let legacyLocationMask = 0;
 let records = [], editingId = null, storageAvailable = true, unreadable = false, pendingAction;
 let statusTimeout;
 function message(text) { $('status').textContent = text; clearTimeout(statusTimeout); statusTimeout = setTimeout(() => $('status').textContent = '', 5000); }
@@ -54,12 +56,13 @@ field('pain-fields','abdominalPain','腹痛',[['-1','未記録'],['0','なし'],
 field('pain-fields','headache','頭痛',[['-1','未記録'],['0','なし'],...scores,['-2','あり（強さ未記録）']]);
 symptoms.forEach((title,i) => field('symptom-fields','symptom-'+i,title,[['-1','未記録'],['0','なし'],['1','あり']]));
 bodyParts.forEach((name,i)=>{
+  if(i===0)return; // Retired whole-body ID remains reserved for existing data.
   const label=document.createElement('label'); label.className='region';
   const checkbox=document.createElement('input'); checkbox.type='checkbox'; checkbox.id='region-'+i;
   label.append(checkbox,document.createTextNode(name)); $('region-fields').append(label);
 });
-function locationMask(){return bodyParts.reduce((mask,_,i)=>$('region-'+i).checked ? mask | (1<<i) : mask,0);}
-function setLocationMask(mask){bodyParts.forEach((_,i)=>$('region-'+i).checked=Boolean(mask & (1<<i)));}
+function locationMask(){return bodyParts.reduce((mask,_,i)=>i>0 && $('region-'+i).checked ? mask | (1<<i) : mask,legacyLocationMask);}
+function setLocationMask(mask){legacyLocationMask=mask & 1;bodyParts.forEach((_,i)=>{if(i>0)$('region-'+i).checked=Boolean(mask & (1<<i));});}
 function locationNames(mask){return bodyParts.filter((_,i)=>mask & (1<<i)).join('、');}
 function validRecord(e) {
   return e && typeof e.id === 'string' && Number.isFinite(e.time) && Number.isFinite(new Date(e.time).getTime()) &&
@@ -86,7 +89,7 @@ function persist(next) {
 }
 function localTime(time=Date.now()) { const d=new Date(time); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`; }
 function pad(n) {return String(n).padStart(2,'0');}
-function reset() { HTMLFormElement.prototype.reset.call($('entry-form')); $('record-time').value=localTime(); editingId=null; $('save').textContent='この内容を保存'; }
+function reset() { legacyLocationMask=0; HTMLFormElement.prototype.reset.call($('entry-form')); $('record-time').value=localTime(); editingId=null; $('save').textContent='この内容を保存'; }
 function draft() { return locationMask()!==0 || editingId!==null || cores.some(([id])=>$(id).value!=='') || $('abdominalPain').value!=='-1' || $('headache').value!=='-1' || symptoms.some((_,i)=>$('symptom-'+i).value!=='-1') || $('location').value!=='' || $('notes').value!==''; }
 function confirmAction(title,text,action) { pendingAction=action; $('confirm-title').textContent=title; $('confirm-message').textContent=text; $('confirm').showModal(); }
 $('cancel').onclick=()=>{$('confirm').close();pendingAction=null;};

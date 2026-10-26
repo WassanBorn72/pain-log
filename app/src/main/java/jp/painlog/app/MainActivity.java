@@ -27,6 +27,7 @@ public class MainActivity extends Activity {
     private Button dateButton, saveButton;
     private final Calendar selected = Calendar.getInstance();
     private long editingId;
+    private int legacyLocationMask; // Bit 0 is retired from selection, preserved in existing records.
     private int tab;
     private boolean exporting;
     private final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy年M月d日 HH:mm", Locale.JAPAN);
@@ -91,19 +92,9 @@ public class MainActivity extends Activity {
         LinearLayout scales = card(form, "症状の強さ");
         scales.addView(label("1＝最も軽い · 10＝最も強い（すべて必須）", 13, INK));
         pain = rating(scales, "身体の痛み（腹痛・頭痛を除く）"); fatigue = rating(scales, "怠さ"); discomfort = rating(scales, "症状に対する不快感");
-        LinearLayout separate = card(form, "腹痛・頭痛");
-        separate.addView(label("身体の痛みとは別に記録します。なし／未記録も選べます。", 13, INK));
-        abdominalPain = separateRating(separate, "腹痛", false);
-        headache = separateRating(separate, "頭痛", true);
-        LinearLayout flags = card(form, "気になる身体症状");
-        flags.addView(label("わからない・答えない項目は「未記録」のままで。", 13, INK));
-        for (int i = 0; i < symptoms.length; i++) {
-            flags.addView(label(Entry.SYMPTOMS[i], 16, INK));
-            symptoms[i] = spinner(new String[]{"未記録", "なし", "あり"}); flags.addView(symptoms[i]);
-        }
         LinearLayout regions = card(form, "痛む部位（複数選択・任意）");
         regions.addView(label("当てはまる場所を選んでください。左右や細かい位置は補足に書けます。", 13, INK));
-        for (int i = 0; i < bodyParts.length; i += 2) {
+        for (int i = 1; i < bodyParts.length; i += 2) {
             LinearLayout row = new LinearLayout(this);
             for (int j = i; j < Math.min(i + 2, bodyParts.length); j++) {
                 CheckBox box = new CheckBox(this); box.setText(Entry.BODY_PARTS[j]);
@@ -115,6 +106,16 @@ public class MainActivity extends Activity {
         }
         regions.addView(label("部位の補足・その他（任意）", 15, INK));
         location = input("例：左肩の外側、右手の指先", false); regions.addView(location);
+        LinearLayout separate = card(form, "腹痛・頭痛");
+        separate.addView(label("身体の痛みとは別に記録します。なし／未記録も選べます。", 13, INK));
+        abdominalPain = separateRating(separate, "腹痛", false);
+        headache = separateRating(separate, "頭痛", true);
+        LinearLayout flags = card(form, "気になる身体症状");
+        flags.addView(label("わからない・答えない項目は「未記録」のままで。", 13, INK));
+        for (int i = 0; i < symptoms.length; i++) {
+            flags.addView(label(Entry.SYMPTOMS[i], 16, INK));
+            symptoms[i] = spinner(new String[]{"未記録", "なし", "あり"}); flags.addView(symptoms[i]);
+        }
         LinearLayout memo = card(form, "メモ");
         memo.addView(label("その他自由記述（任意）", 15, INK));
         notes = input("症状の変化、服薬、睡眠、きっかけなど", true); memo.addView(notes);
@@ -167,12 +168,13 @@ public class MainActivity extends Activity {
         }, selected.get(Calendar.YEAR), selected.get(Calendar.MONTH), selected.get(Calendar.DAY_OF_MONTH)).show();
     }
     private int locationMask() {
-        int mask = 0;
-        for (int i = 0; i < bodyParts.length; i++) if (bodyParts[i].isChecked()) mask |= 1 << i;
+        int mask = legacyLocationMask;
+        for (int i = 1; i < bodyParts.length; i++) if (bodyParts[i].isChecked()) mask |= 1 << i;
         return mask;
     }
     private void setLocationMask(int mask) {
-        for (int i = 0; i < bodyParts.length; i++) bodyParts[i].setChecked((mask & (1 << i)) != 0);
+        legacyLocationMask = mask & 1;
+        for (int i = 1; i < bodyParts.length; i++) bodyParts[i].setChecked((mask & (1 << i)) != 0);
     }
     private Entry current() {
         Entry e = new Entry(); e.id = editingId; e.time = selected.getTimeInMillis();
