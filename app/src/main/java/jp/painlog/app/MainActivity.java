@@ -70,8 +70,11 @@ public class MainActivity extends Activity {
         }
         updateDate(); showTab(tab);
     }
-    @android.annotation.TargetApi(30)
     static void applySafeInsets(View view, WindowInsets insets, int horizontal, int vertical) {
+        if (android.os.Build.VERSION.SDK_INT < 30) {
+            view.setPadding(horizontal, vertical, horizontal, vertical);
+            return;
+        }
         // Keep bars safe even when temporarily hidden; union prevents counting the IME
         // and navigation bar twice. Cutouts may be on the sides in landscape.
         android.graphics.Insets bars = insets.getInsetsIgnoringVisibility(
