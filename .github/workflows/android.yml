@@ -17,7 +17,11 @@ jobs:
         run: |
           set -euo pipefail
           test -n "${ANDROID_HOME:-}"
-          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install 'platforms;android-35' 'build-tools;35.0.0'
+          if [ ! -f "$ANDROID_HOME/platforms/android-35/android.jar" ] || [ ! -x "$ANDROID_HOME/build-tools/35.0.0/apksigner" ]; then
+            timeout 180 "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install 'platforms;android-35' 'build-tools;35.0.0'
+          fi
+          test -f "$ANDROID_HOME/platforms/android-35/android.jar"
+          test -x "$ANDROID_HOME/build-tools/35.0.0/apksigner"
       - uses: gradle/actions/setup-gradle@v4
       - run: ./gradlew --max-workers=4 testDebugUnitTest lintDebug assembleDebug
       - uses: actions/upload-artifact@v4
