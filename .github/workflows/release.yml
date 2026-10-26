@@ -20,7 +20,7 @@ jobs:
         run: |
           set -euo pipefail
           test -n "${ANDROID_HOME:-}"
-          sdkmanager --install 'platforms;android-35' 'build-tools;35.0.0'
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install 'platforms;android-35' 'build-tools;35.0.0'
       - uses: gradle/actions/setup-gradle@v4
       - uses: actions/setup-node@v4
         with:
@@ -70,7 +70,7 @@ jobs:
           expected="$(tr -d '\r\n' < docs/RELEASE_CERTIFICATE_SHA256.txt)"
           actual="$(sed -n 's/.*certificate SHA-256 digest: //p' dist/signature.txt | head -n 1)"
           test "$actual" = "$expected"
-          test "$(apkanalyzer manifest debuggable "dist/pain-log-${GITHUB_REF_NAME}.apk")" = false
+          test "$("$ANDROID_HOME/cmdline-tools/latest/bin/apkanalyzer" manifest debuggable "dist/pain-log-${GITHUB_REF_NAME}.apk")" = false
           cp docs/index.html dist/pain-log-browser.html
           (cd dist && sha256sum "pain-log-${GITHUB_REF_NAME}.apk" pain-log-browser.html > SHA256SUMS)
       - name: Create draft, verify uploaded files, then publish
