@@ -34,15 +34,18 @@ public class MainActivity extends Activity {
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
         store = new EntryStore(this);
-        root = column(); root.setPadding(dp(20), dp(12), dp(20), 0); root.setBackgroundColor(PAPER);
+        root = column(); root.setPadding(dp(20), dp(12), dp(20), dp(12)); root.setBackgroundColor(PAPER);
         setContentView(root);
-        if (android.os.Build.VERSION.SDK_INT >= 35) {
+        if (android.os.Build.VERSION.SDK_INT >= 30) {
+            // Use one inset owner, including Android 15's enforced edge-to-edge layout.
+            getWindow().setDecorFitsSystemWindows(false);
             root.setOnApplyWindowInsetsListener((v, insets) -> {
-                android.graphics.Insets bars = insets.getInsets(WindowInsets.Type.systemBars());
-                v.setPadding(dp(20) + bars.left, dp(12) + bars.top, dp(20) + bars.right, bars.bottom);
+                applySafeInsets(v, insets, dp(20), dp(12));
                 return insets;
             });
+            root.requestApplyInsets();
         }
+        // Android 8–10 retain the platform's fitted content area and adjustResize.
         root.addView(label("PAIN LOG  /  自分のペースで", 12, TEAL));
         TextView title = label("からだの記録", 28, INK); title.setTypeface(null, Typeface.BOLD); root.addView(title);
         root.addView(label("今日の体調を、少しずつ残しましょう。", 14, INK));
@@ -66,6 +69,18 @@ public class MainActivity extends Activity {
             exporting = state.getBoolean("exporting"); tab = state.getInt("tab");
         }
         updateDate(); showTab(tab);
+    }
+    @android.annotation.TargetApi(30)
+    static void applySafeInsets(View view, WindowInsets insets, int horizontal, int vertical) {
+        // Keep bars safe even when temporarily hidden; union prevents counting the IME
+        // and navigation bar twice. Cutouts may be on the sides in landscape.
+        android.graphics.Insets bars = insets.getInsetsIgnoringVisibility(
+            WindowInsets.Type.systemBars() | WindowInsets.Type.displayCutout());
+        android.graphics.Insets keyboard = insets.getInsets(WindowInsets.Type.ime());
+        view.setPadding(horizontal + Math.max(bars.left, keyboard.left),
+            vertical + Math.max(bars.top, keyboard.top),
+            horizontal + Math.max(bars.right, keyboard.right),
+            vertical + Math.max(bars.bottom, keyboard.bottom));
     }
     private void buildForm() {
         LinearLayout when = card(form, "記録日時");
