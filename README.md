@@ -10,7 +10,9 @@
 
 Android 8.0以降に対応しています。
 
-正式配布版は現在準備中です。配布開始後、このページからAPKのダウンロード先をご案内します。
+**[Android版 v1.3.0をダウンロード](https://github.com/WassanBorn72/pain-log/releases/download/v1.3.0/pain-log-v1.3.0.apk)**
+
+[リリース情報と全ダウンロードファイル](https://github.com/WassanBorn72/pain-log/releases/tag/v1.3.0)
 
 APKを端末に保存して開くとインストールできます。Androidに許可を求められた場合は、ダウンロードに使ったブラウザなどに対して「この提供元のアプリを許可」を選び、インストール後は必要に応じて許可を戻してください。
 
@@ -51,7 +53,7 @@ APKを端末に保存して開くとインストールできます。Androidに�
 
 ## ブラウザで試す
 
-[ブラウザ体験版のHTML](docs/index.html)をダウンロードして、ChromeやEdgeなどで開くと、インストール前に操作を試せます。「サンプルを入力」から試験用の記録を作成できます。GitHubのファイル表示画面では動作しないため、ファイルを保存してから開いてください。
+[ブラウザ体験版のHTML](https://github.com/WassanBorn72/pain-log/releases/download/v1.3.0/pain-log-browser.html)をダウンロードして、ChromeやEdgeなどで開くと、インストール前に操作を試せます。「サンプルを入力」から試験用の記録を作成できます。GitHubのファイル表示画面では動作しないため、ファイルを保存してから開いてください。
 
 ブラウザ体験版の保存先は、そのブラウザ内です。**Androidアプリの記録とは同期しません。** ブラウザからのCSV出力にはブラウザ内の記録が、AndroidからのCSV出力にはAndroid内の記録が入ります。
 
