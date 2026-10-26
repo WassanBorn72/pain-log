@@ -1,0 +1,81 @@
+name: Publish signed Android release
+on:
+  push:
+    tags: ['v*']
+permissions:
+  contents: write
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: android-actions/setup-android@v3
+      - uses: gradle/actions/setup-gradle@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Check version and required credentials
+        env:
+          KEYSTORE: ${{ secrets.PAINLOG_KEYSTORE_BASE64 }}
+          STORE_PASSWORD: ${{ secrets.PAINLOG_STORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.PAINLOG_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.PAINLOG_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          : "${KEYSTORE:?Set PAINLOG_KEYSTORE_BASE64 in repository secrets}"
+          : "${STORE_PASSWORD:?Set PAINLOG_STORE_PASSWORD in repository secrets}"
+          : "${KEY_ALIAS:?Set PAINLOG_KEY_ALIAS in repository secrets}"
+          : "${KEY_PASSWORD:?Set PAINLOG_KEY_PASSWORD in repository secrets}"
+          python3 - <<'PY'
+          import os, re
+          version = re.search(r"versionName '([^']+)'", open('app/build.gradle').read()).group(1)
+          assert os.environ['GITHUB_REF_NAME'] == 'v' + version, 'Tag must match Android versionName'
+          PY
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm test
+      - run: ./gradlew --max-workers=4 testDebugUnitTest lintRelease
+      - name: Build signed APK
+        env:
+          KEYSTORE: ${{ secrets.PAINLOG_KEYSTORE_BASE64 }}
+          PAINLOG_STORE_PASSWORD: ${{ secrets.PAINLOG_STORE_PASSWORD }}
+          PAINLOG_KEY_ALIAS: ${{ secrets.PAINLOG_KEY_ALIAS }}
+          PAINLOG_KEY_PASSWORD: ${{ secrets.PAINLOG_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          umask 077
+          export PAINLOG_KEYSTORE_PATH="$RUNNER_TEMP/pain-log-release.jks"
+          trap 'rm -f "$PAINLOG_KEYSTORE_PATH"' EXIT
+          printf '%s' "$KEYSTORE" | base64 --decode > "$PAINLOG_KEYSTORE_PATH"
+          ./gradlew --max-workers=4 assembleRelease
+          mkdir -p dist
+          cp app/build/outputs/apk/release/app-release.apk "dist/pain-log-${GITHUB_REF_NAME}.apk"
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs "dist/pain-log-${GITHUB_REF_NAME}.apk" > dist/signature.txt
+          if grep -q 'CN=Android Debug' dist/signature.txt; then
+            echo 'Refusing to publish an APK signed by the Android debug key' >&2
+            exit 1
+          fi
+          expected="$(tr -d '\r\n' < docs/RELEASE_CERTIFICATE_SHA256.txt)"
+          actual="$(sed -n 's/.*certificate SHA-256 digest: //p' dist/signature.txt | head -n 1)"
+          test "$actual" = "$expected"
+          test "$(apkanalyzer manifest debuggable "dist/pain-log-${GITHUB_REF_NAME}.apk")" = false
+          cp docs/index.html dist/pain-log-browser.html
+          (cd dist && sha256sum "pain-log-${GITHUB_REF_NAME}.apk" pain-log-browser.html > SHA256SUMS)
+      - name: Create draft, verify uploaded files, then publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh release create "$GITHUB_REF_NAME" --verify-tag --draft --title "からだの記録 ${GITHUB_REF_NAME}" --notes-file docs/RELEASE_NOTES.md dist/*
+          mkdir -p "$RUNNER_TEMP/release-download"
+          gh release download "$GITHUB_REF_NAME" --dir "$RUNNER_TEMP/release-download"
+          (cd "$RUNNER_TEMP/release-download" && sha256sum -c SHA256SUMS)
+          gh release edit "$GITHUB_REF_NAME" --draft=false --latest

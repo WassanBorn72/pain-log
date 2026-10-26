@@ -1,5 +1,14 @@
 plugins { id 'com.android.application' }
 
+def releaseKeystore = providers.environmentVariable('PAINLOG_KEYSTORE_PATH').orNull
+def releaseStorePassword = providers.environmentVariable('PAINLOG_STORE_PASSWORD').orNull
+def releaseKeyAlias = providers.environmentVariable('PAINLOG_KEY_ALIAS').orNull
+def releaseKeyPassword = providers.environmentVariable('PAINLOG_KEY_PASSWORD').orNull
+def signingValues = [releaseKeystore, releaseStorePassword, releaseKeyAlias, releaseKeyPassword]
+if (signingValues.any { it } && !signingValues.every { it }) {
+    throw new GradleException('Release signing requires all four PAINLOG signing variables. Never use the debug key for production.')
+}
+
 android {
     namespace 'jp.painlog.app'
     compileSdk 35
@@ -7,9 +16,25 @@ android {
         applicationId 'jp.painlog.app'
         minSdk 26
         targetSdk 35
-        versionCode 5
-        versionName '1.2.2'
+        versionCode 6
+        versionName '1.3.0'
         testInstrumentationRunner 'android.test.InstrumentationTestRunner'
+    }
+    signingConfigs {
+        if (signingValues.every { it }) {
+            release {
+                storeFile file(releaseKeystore)
+                storePassword releaseStorePassword
+                keyAlias releaseKeyAlias
+                keyPassword releaseKeyPassword
+            }
+        }
+    }
+    buildTypes {
+        release {
+            debuggable false
+            if (signingValues.every { it }) signingConfig signingConfigs.release
+        }
     }
     testOptions { unitTests.includeAndroidResources = true }
     compileOptions {
