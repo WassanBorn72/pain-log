@@ -1,6 +1,6 @@
 # 正式リリース手順
 
-現在はリリース準備中です。添付アイコンをもとに作成したアイコン素材は組み込み済みで、配布先はGitHub Releasesです。初回の正式署名鍵はリポジトリ外で新規作成しました。GitHub APIの通信許可とGitHub repository secretsへの登録、鍵の安全なバックアップは未完了です。debug APKや署名なしAPKを正式版として配布しないでください。
+現在はリリース準備中です。添付アイコンをもとに作成したアイコン素材は組み込み済みで、配布先はGitHub Releasesです。正式署名鍵はユーザーのMacで作り直しました。公開用証明書SHA-256を照合先に設定済みです。新しい鍵のGitHub repository secretsへの登録と、鍵の安全なバックアップが必要です。debug APKや署名なしAPKを正式版として配布しないでください。
 
 ## 配布と署名
 
@@ -38,7 +38,7 @@ npm test
 - リリースノートに検証結果、未確認事項、対応OS、更新時の注意を記載する。
 - 公開コミットをmainに統合し、バージョン名と一致するタグを付ける。公開版を後から別内容で上書きしない。
 
-GitHub APIはこの環境からアクセスを拒否されているため、現時点でGitHub Releaseの作成・APKアップロードは未実施です。Gitの読み書き成功は、GitHub APIへのアクセス成功を意味しません。
+GitHub APIには接続できますが、この作業用認証にはRepository secretsを登録・確認する権限がありません。秘密の値はGitHubの設定画面から登録してください。GitHub Releaseの正式公開はまだ行っていません。
 
 ## GitHub Actionsでの配布
 
@@ -64,6 +64,21 @@ keytool -genkeypair -keystore pain-log-release.jks -alias pain-log \
 
 `assets/branding/launcher-artwork.png` は添付されたPAIN LOG画像をもとに、アイコン用に背景・余白を調整した画像です。Androidにはadaptive iconと丸型アイコン指定を設定しています。元の文字・色を参考にした加工素材で、元画像そのもののバイト列ではありません。アイコン用PNGの再生成は `python3 scripts/generate_icons.py`（Pillowが必要）で行います。
 
-この作業環境で生成した初回鍵は `/workspace/pain-log-signing/pain-log-release.p12`、秘密の署名設定は同ディレクトリの `signing.json` に権限0600で保存しています。これらはGitへ追加しません。このクラウド環境を破棄する前に、ユーザー管理の安全な場所に両方をバックアップしてください。GitHub Secretsへの登録後も、元の鍵のバックアップは必要です。
+## 現在使用する署名鍵
 
-この環境での署名ビルドは `python3 scripts/build_signed_release.py /workspace/pain-log-signing/signing.json` で実行できます（JDK・SDK・プロキシ設定は開発者ガイドを参照）。GitHub API接続が利用可能になったら、`python3 scripts/configure_release_secrets.py /workspace/pain-log-signing/signing.json` で4つのRepository secretsを登録できます。いずれのスクリプトも秘密の値を表示せず、設定ファイル自体をGitへ追加しません。
+正式公開には、Macの `~/pain-log-signing-new/pain-log-release.jks` を使用します。チャットへ共有された古い鍵・パスワード、および以前このクラウド環境で生成した鍵は使用しません。以前のAPKは新しい鍵による正式配布物ではありません。
+
+GitHubの Settings → Secrets and variables → Actions → New repository secret で、**新しい `pain-log-signing-new` フォルダ**の次のファイルを登録してください。同名Secretがあれば更新します。
+
+| Secret名 | 内容をコピーするファイル |
+| --- | --- |
+| `PAINLOG_KEYSTORE_BASE64` | `PAINLOG_KEYSTORE_BASE64.txt` |
+| `PAINLOG_STORE_PASSWORD` | `PAINLOG_STORE_PASSWORD.txt` |
+| `PAINLOG_KEY_ALIAS` | `PAINLOG_KEY_ALIAS.txt` |
+| `PAINLOG_KEY_PASSWORD` | `PAINLOG_KEY_PASSWORD.txt` |
+
+`PUBLIC_CERTIFICATE_SHA256.txt` は公開情報であり、Secret登録は不要です。`pain-log-release.jks` はMacと安全なバックアップ先で保管します。ファイルやSecretの値をチャットへ送る必要はありません。
+
+正しい鍵の照合値は `docs/RELEASE_CERTIFICATE_SHA256.txt` に保存しています。リリースワークフローは署名後のAPKをこの値と比較し、一致しなければ公開を停止します。
+
+ローカルビルドは `scripts/build_signed_release.py`、CLIからのSecrets登録は `scripts/configure_release_secrets.py` を使用できます。いずれも、新しい正しい鍵を指す非公開JSON設定が必要です。後者にはGitHub Secretsへの書き込み権限も必要です。
